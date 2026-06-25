@@ -1,0 +1,1264 @@
+
+/* ============================================================
+    ROOT VARIABLES & THEME SYSTEM
+    ============================================================
+    Variabel CSS untuk mengatur tema dark (default) dan light.
+    Menggunakan warna palette Hack The Box (hijau neon #9fef00 
+    dengan background gelap).
+============================================================ */
+:root {
+    /* Warna tema Dark (default) */
+    --bg-primary: #141d2b;       /* Background utama */
+    --bg-secondary: #1a2332;     /* Background sekunder/sidebar */
+    --bg-tertiary: #0d1117;      /* Background tersier (lebih gelap) */
+    --bg-card: #1e2a3a;          /* Background card/komponen */
+    --bg-hover: #222e3f;         /* Background saat hover */
+    --bg-input: #111927;         /* Background input field */
+
+    --text-primary: #a4b1cd;     /* Teks utama (abu kebiruan) */
+    --text-secondary: #8b95a5;   /* Teks sekunder */
+    --text-bright: #ffffff;      /* Teks terang */
+    --text-muted: #5d6c7b;       /* Teks redup */
+
+    --accent: #9fef00;           /* Warna aksen hijau neon (HTB style) */
+    --accent-hover: #8ad600;     /* Warna aksen saat hover */
+    --accent-dim: rgba(159, 239, 0, 0.15); /* Aksen transparan */
+
+    --border-color: #2a3241;     /* Warna border */
+    --border-light: #1e293b;     /* Border lebih tipis */
+
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.4); /* Shadow default */
+    --shadow-glow: 0 0 20px rgba(159, 239, 0, 0.2); /* Glow hijau */
+
+    --sidebar-width: 280px;      /* Lebar sidebar default */
+    --sidebar-collapsed: 0px;    /* Lebar sidebar saat tertutup */
+    --header-height: 60px;       /* Tinggi header */
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Animasi transisi */
+}
+
+/* ============================================================
+    MODE LIGHT THEME
+    ============================================================
+    Class 'light-mode' yang ditambahkan ke <html> untuk
+    mengubah semua variabel ke tema terang.
+============================================================ */
+html.light-mode {
+    --bg-primary: #f0f2f5;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e8eaed;
+    --bg-card: #ffffff;
+    --bg-hover: #e8eaed;
+    --bg-input: #f0f2f5;
+
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a6a;
+    --text-bright: #0f0f23;
+    --text-muted: #8a8aa0;
+
+    --accent: #2d6a4f;
+    --accent-hover: #1b4332;
+    --accent-dim: rgba(45, 106, 79, 0.15);
+
+    --border-color: #d1d5db;
+    --border-light: #e5e7eb;
+
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 20px rgba(45, 106, 79, 0.15);
+}
+
+/* ============================================================
+    RESET & BASE STYLES
+    ============================================================
+    Reset margin, padding, dan box-sizing untuk konsistensi
+    antar browser.
+============================================================ */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: var(--transition);
+}
+
+/* Scrollbar custom untuk tampilan yang lebih baik */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+/* ============================================================
+    LAYOUT UTAMA
+    ============================================================
+    Struktur layout menggunakan CSS Grid:
+    - Sidebar di kiri
+    - Main content di kanan
+    - Header di atas main content
+============================================================ */
+.app-container {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    min-height: 100vh;
+    transition: var(--transition);
+}
+
+/* Saat sidebar tertutup */
+.app-container.sidebar-closed {
+    grid-template-columns: var(--sidebar-collapsed) 1fr;
+}
+
+/* ============================================================
+    SIDEBAR
+    ============================================================
+    Sidebar navigasi di sisi kiri dengan fitur:
+    - Toggle button untuk buka/tutup
+    - Profil user
+    - New Chat, History, AI Agents, Projects, Settings
+============================================================ */
+.sidebar {
+    background-color: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: var(--transition);
+    z-index: 100;
+}
+
+/* Saat sidebar tertutup, sembunyikan konten tapi pertahankan lebar untuk animasi smooth */
+.sidebar-closed .sidebar {
+    width: 0;
+    padding: 0;
+    border-right: none;
+    overflow: hidden;
+}
+
+/* --- Toggle Sidebar Button --- */
+.sidebar-toggle {
+    position: fixed;          /* ← kunci perbaikan: keluar dari flow sidebar */
+    top: 15px;
+    left: calc(var(--sidebar-width) - 16px); /* tengah di border sidebar (280px - 16px) */
+    width: 32px;
+    height: 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    z-index: 201;               /* ← di atas overlay mobile (z-index 199) */
+}
+
+/* fixing toggle sidebar */
+.sidebar-toggle:hover {
+    background: var(--accent);
+    color: var(--bg-tertiary);
+    border-color: var(--accent);
+}
+
+/* Saat sidebar tertutup, tombol pindah ke pojok kiri */
+.sidebar-closed .sidebar-toggle {
+    left: 15px;
+}
+
+/* --- User Profile Section --- */
+.user-profile {
+    padding: 24px 20px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+}
+.user-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 28px;
+    color: var(--bg-tertiary);
+    font-weight: bold;
+    box-shadow: var(--shadow-glow);
+}
+.user-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+}
+.user-role {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.user-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+    /* --- IP Address Display --- */
+    .ip-display {
+        margin-top: 12px;
+        padding: 6px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: var(--transition);
+        font-family: 'Courier New', monospace;
+    }
+    .ip-display:hover {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+    }
+    .ip-display i {
+        font-size: 11px;
+    }
+
+/* --- Sidebar Navigation --- */
+.sidebar-nav {
+    flex: 1;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav-section {
+    margin-bottom: 16px;
+}
+.nav-section-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    padding: 0 12px;
+    margin-bottom: 8px;
+}
+
+/* Style umum untuk item navigasi */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+.nav-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-bright);
+}
+.nav-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+.nav-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+/* --- New Chat Button (highlighted) --- */
+.btn-new-chat {
+    background: var(--accent) !important;
+    color: var(--bg-tertiary) !important;
+    font-weight: 600;
+    margin-bottom: 8px;
+    justify-content: center;
+}
+.btn-new-chat:hover {
+    background: var(--accent-hover) !important;
+    box-shadow: var(--shadow-glow);
+}
+
+/* History list container */
+#historyList {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+#historyList .nav-item {
+    font-size: 13px;
+}
+#historyList .nav-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- History Item dengan Actions --- */
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+.history-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-bright);
+}
+.history-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+.history-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+    flex: 1;
+}
+.history-content i {
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.history-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.history-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.history-item:hover .history-actions {
+    opacity: 1;
+}
+.history-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: var(--transition);
+}
+.history-btn:hover {
+    background: var(--bg-card);
+    color: var(--accent);
+}
+.history-btn.delete:hover {
+    color: #ef4444;
+}
+
+/* --- AI Agent Skills Tags --- */
+.agent-skills {
+    display: none;
+    padding: 8px 12px 8px 44px;
+    flex-direction: column;
+    gap: 6px;
+}
+.agent-skills.show {
+    display: flex;
+}
+.skill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.skill-tag:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.skill-tag.selected {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.skill-tag i {
+    font-size: 12px;
+    width: auto;
+}
+
+/* --- Projects List --- */
+.projects-list {
+    display: none;
+    padding: 8px 12px 8px 44px;
+    flex-direction: column;
+    gap: 4px;
+}
+.projects-list.show {
+    display: flex;
+}
+.project-item {
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.project-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-bright);
+}
+.project-item::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--accent);
+}
+
+/* --- Settings Panel --- */
+.settings-panel {
+    display: none;
+    padding: 8px 12px 8px 44px;
+    flex-direction: column;
+    gap: 12px;
+}
+.settings-panel.show {
+    display: flex;
+}
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Toggle Switch CSS */
+.toggle-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: var(--bg-tertiary);
+    border-radius: 11px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid var(--border-color);
+}
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: var(--transition);
+}
+.toggle-switch.active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.toggle-switch.active::after {
+    left: 20px;
+    background: var(--bg-tertiary);
+}
+
+/* ============================================================
+    MAIN CONTENT AREA
+    ============================================================
+    Area utama yang berisi:
+    - Header dengan judul dan kontrol (theme toggle, temp chat)
+    - Search bar
+    - Chat interface
+============================================================ */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+/* --- Header --- */
+.main-header {
+    height: var(--header-height);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.app-logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-bright);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.app-logo i {
+    color: var(--accent);
+    font-size: 24px;
+}
+.app-tagline {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid var(--border-color);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Tombol header (temp chat, theme toggle) */
+.header-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: var(--transition);
+}
+.header-btn:hover {
+    background: var(--bg-hover);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+.header-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+.header-btn .tooltip {
+    position: absolute;
+    top: 45px;
+    background: var(--bg-tertiary);
+    color: var(--text-bright);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition);
+    border: 1px solid var(--border-color);
+}
+.header-btn:hover .tooltip {
+    opacity: 1;
+}
+
+/* ============================================================
+    CHAT INTERFACE
+    ============================================================
+    Area chat yang terdiri dari:
+    - Messages area (scrollable)
+    - Input area dengan upload dokumen dan model selector
+============================================================ */
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- Welcome Screen (saat belum ada chat) --- */
+.welcome-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    overflow-y: auto;
+    min-height: 0;
+}
+.welcome-screen.hidden {
+    display: none;
+}
+.welcome-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--accent-dim);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    color: var(--accent);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-glow);
+}
+.welcome-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 12px;
+}
+.welcome-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 500px;
+    line-height: 1.6;
+}
+.welcome-suggestions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    max-width: 600px;
+    width: 100%;
+    margin-top: 32px;
+}
+.suggestion-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.suggestion-card:hover {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+    transform: translateY(-2px);
+}
+.suggestion-card i {
+    color: var(--accent);
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+.suggestion-card h4 {
+    font-size: 14px;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+}
+.suggestion-card p {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* --- Messages Area --- */
+.messages-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+}
+.messages-area.hidden {
+    display: none;
+}
+
+/* --- Message Actions (Edit, Copy, Regenerate) --- */
+.message-actions-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.message:hover .message-actions-row {
+    opacity: 1;
+}
+.msg-action-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: var(--transition);
+}
+.msg-action-btn:hover {
+    background: var(--bg-hover);
+    color: var(--accent);
+}
+.message.user .msg-action-btn:hover {
+    color: var(--bg-tertiary);
+    background: rgba(0,0,0,0.2);
+}
+
+/* Chat Message Bubble */
+.message {
+    max-width: 80%;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    animation: messageSlide 0.3s ease-out;
+}
+@keyframes messageSlide {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.message.user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: var(--bg-tertiary);
+    border-bottom-right-radius: 4px;
+}
+.message.assistant {
+    align-self: flex-start;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 4px;
+}
+.message-time {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-top: 6px;
+    display: block;
+}
+
+/* --- Input Area --- */
+.input-area {
+    padding: 16px 24px 24px;
+    flex-shrink: 0;
+    /* background: var(--bg-secondary); */
+    /* border-top: 1px solid var(--border-color); */
+}
+.input-wrapper {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: var(--transition);
+}
+.input-wrapper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+/* Input Controls (Upload & Model Selector) */
+.input-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.input-controls-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Upload Button */
+.btn-upload {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: var(--transition);
+}
+.btn-upload:hover {
+    background: var(--bg-hover);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+/* Hidden file input */
+#fileInput {
+    display: none;
+}
+/* File info display */
+.file-info {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+.file-info.show {
+    display: flex;
+}
+.file-info button {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* Model Selector Dropdown */
+.model-selector {
+    position: relative;
+}
+.model-select-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.model-select-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-bright);
+}
+.model-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 8px;
+    min-width: 220px;
+    box-shadow: var(--shadow);
+    display: none;
+    z-index: 10;
+}
+.model-dropdown.show {
+    display: block;
+}
+.model-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.model-option:hover {
+    background: var(--bg-hover);
+}
+.model-option.selected {
+    background: var(--accent-dim);
+}
+.model-option i {
+    color: var(--accent);
+    font-size: 16px;
+}
+.model-option-info {
+    display: flex;
+    flex-direction: column;
+}
+.model-option-name {
+    font-size: 13px;
+    color: var(--text-bright);
+    font-weight: 500;
+}
+.model-option-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Textarea Input */
+.chat-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    min-height: 24px;
+    max-height: 120px;
+}
+.chat-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Send Button */
+.input-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+.btn-send {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: var(--bg-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: var(--transition);
+}
+.btn-send:hover {
+    background: var(--accent-hover);
+    box-shadow: var(--shadow-glow);
+    transform: scale(1.05);
+}
+.btn-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================================================
+    SEARCH BAR (di atas chat)
+    ============================================================
+    Search bar untuk mencari history chat atau konten
+============================================================ */
+.search-bar-container {
+    padding: 16px 24px 0;
+}
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 16px;
+    transition: var(--transition);
+}
+.search-bar:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.search-bar i {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+.search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+.search-shortcut {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* ============================================================
+    RESPONSIVE DESIGN
+    ============================================================
+    Media queries untuk tampilan mobile (max-width: 768px)
+============================================================ */
+
+@media (max-width: 768px) {
+    .app-container {
+        grid-template-columns: 1fr;
+    }
+    .app-container.sidebar-closed {
+        grid-template-columns: 1fr;
+    }
+
+    /* Sidebar menjadi overlay di mobile */
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        transform: translateX(0);
+        z-index: 200;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar-closed .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+    }
+
+    /* Overlay gelap saat sidebar terbuka di mobile */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 199;
+    }
+    .sidebar-overlay.show {
+        display: block;
+    }
+
+    /* Toggle button: saat sidebar terbuka, di dalam area sidebar */
+    .app-container:not(.sidebar-closed) .sidebar-toggle {
+        left: calc(280px - 16px);
+    }
+    /* Toggle button: saat sidebar tertutup, di pojok kiri */
+    .sidebar-closed .sidebar-toggle {
+        left: 15px;
+    }
+
+    .main-header {
+        padding-left: 60px;
+    }
+
+    .welcome-title {
+        font-size: 22px;
+    }
+    .welcome-suggestions {
+        grid-template-columns: 1fr;
+    }
+
+    .message {
+        max-width: 90%;
+    }
+
+    .app-tagline {
+        display: none;
+    }
+    
+    /* Fix scroll di mobile */
+    body {
+        overflow: hidden;
+        height: 100vh;
+    }
+    .chat-container {
+        min-height: 0;
+    }
+/* FIX: Gunakan dynamic viewport height untuk mobile */
+        .main-content {
+            height: 100dvh;  /* Menghitung tinggi aktual layar (minus address bar) */
+        }
+
+        /* FIX: Chat container tidak boleh overflow */
+        .chat-container {
+            min-height: 0;
+        }
+
+        /* FIX: Input area tidak boleh menyusut/terdorong */
+        .input-area {
+            flex-shrink: 0;
+            padding: 12px 16px;
+        }
+
+        .input-wrapper {
+            gap: 8px;
+            padding: 10px 12px;
+        }
+
+        /* FIX: Kontrol input bisa wrap jika terlalu lebar */
+        .input-controls {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* FIX: Textarea tidak terlalu besar di mobile */
+        .chat-input {
+            max-height: 80px;
+            font-size: 16px;  /* Mencegah iOS zoom saat focus */
+        }
+
+        /* FIX: Tombol send selalu terlihat */
+        .btn-send {
+            min-width: 36px;
+            min-height: 36px;
+        }
+}
+
+/* ============================================================
+    ANIMATIONS & UTILITIES
+    ============================================================ */
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Loading indicator untuk AI response */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 4px 0;
+}
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite ease-in-out;
+}
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+    /* ============================================================
+        ERROR & STATUS STYLES
+        ============================================================ */
+    .error-message {
+        align-self: flex-start;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+        border-radius: 14px;
+        padding: 14px 18px;
+        font-size: 14px;
+        max-width: 80%;
+        animation: messageSlide 0.3s ease-out;
+    }
+    .error-message i {
+        margin-right: 8px;
+    }
+    
+    .status-bar {
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        display: none;
+        align-items: center;
+        gap: 8px;
+        z-index: 100;
+        box-shadow: var(--shadow);
+    }
+    .status-bar.show {
+        display: flex;
+    }
+    .status-bar.error {
+        border-color: rgba(239, 68, 68, 0.5);
+        color: #ef4444;
+    }
+    .status-bar.connecting {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
