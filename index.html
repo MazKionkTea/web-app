@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DarkMind AI - LLM Interface</title>
+    <title>Jembut DarkMind AI - LLM Interface</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/lib/marked.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
+    <link rel="stylesheet" href="style.css">
+    <script src="app2.js"></script>
+    <link rel="stylesheet" href="all.min.css"> <!-- altenatif offline dari https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css -->
+    <script src="marked.min.js"></script> <!-- altenatif offline dari https://cdn.jsdelivr.net/npm/marked@9.1.6/lib/marked.umd.min.js -->
+    <script src="highlight.min.js"></script> <!-- altenatif offline dari https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js -->
+<base target="_blank">
 </head>
 <body>
     <!-- ============================================================
@@ -24,6 +32,11 @@
          untuk mengatur state sidebar.
     ============================================================ -->
     <div class="app-container" id="appContainer">
+        <!-- Tombol toggle sidebar (hamburger icon) -->
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+            <i class="fas fa-bars" id="toggleIcon"></i>
+        </button>
+
 
         <!-- ============================================================
              SIDEBAR
@@ -34,10 +47,6 @@
              - Navigasi: New Chat, History, AI Agents, Projects, Settings
         ============================================================ -->
         <aside class="sidebar" id="sidebar">
-            <!-- Tombol toggle sidebar (hamburger icon) -->
-            <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Sidebar">
-                <i class="fas fa-bars" id="toggleIcon"></i>
-            </button>
 
             <!-- --- USER PROFILE SECTION --- -->
             <div class="user-profile">
@@ -50,6 +59,11 @@
                     <span class="status-dot"></span>
                     <span>Online</span>
                 </div>
+                <!-- IP Address Display -->
+                <div class="ip-display" id="ipAddressDisplay" title="">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Detecting...</span>
+                </div>
             </div>
 
             <!-- --- SIDEBAR NAVIGATION --- -->
@@ -60,28 +74,7 @@
                     <i class="fas fa-plus"></i>
                     <span>New Chat</span>
                 </button>
-
-                <!-- Section: Chat History -->
-                <div class="nav-section">
-                    <div class="nav-section-title">History</div>
-                    <button class="nav-item active" onclick="loadChat('chat1')">
-                        <i class="fas fa-comment"></i>
-                        <span>Penetration Testing Guide</span>
-                    </button>
-                    <button class="nav-item" onclick="loadChat('chat2')">
-                        <i class="fas fa-comment"></i>
-                        <span>Python Exploit Development</span>
-                    </button>
-                    <button class="nav-item" onclick="loadChat('chat3')">
-                        <i class="fas fa-comment"></i>
-                        <span>Network Reconnaissance</span>
-                    </button>
-                    <button class="nav-item" onclick="loadChat('chat4')">
-                        <i class="fas fa-comment"></i>
-                        <span>Reverse Engineering Basics</span>
-                    </button>
-                </div>
-
+                
                 <!-- Section: AI Agents -->
                 <div class="nav-section">
                     <div class="nav-section-title">AI Agents</div>
@@ -133,6 +126,15 @@
                     </div>
                 </div>
 
+                <!-- Section: Chat History -->
+                <div class="nav-section">
+                    <div class="nav-section-title">History</div>
+                    <div id="historyList">
+                        <!-- History items akan dirender via JavaScript -->
+                        <div style="padding: 12px; color: var(--text-muted); font-size: 12px; text-align: center;">Loading...</div>
+                    </div>
+                </div>
+                
                 <!-- Section: Settings -->
                 <div class="nav-section">
                     <div class="nav-section-title">System</div>
@@ -180,7 +182,7 @@
                     <!-- Logo aplikasi dengan ikon -->
                     <div class="app-logo">
                         <i class="fas fa-brain"></i>
-                        <span>DarkMind AI</span>
+                        <span>Jembut DarkMind AI</span>
                         <span class="app-tagline">Advanced LLM Interface</span>
                     </div>
                 </div>
@@ -217,7 +219,7 @@
                     </div>
                     <h1 class="welcome-title">How can I assist you today?</h1>
                     <p class="welcome-subtitle">
-                        DarkMind AI is your advanced cybersecurity companion. Ask anything about penetration testing, 
+                        DarkMind AI is your advanced cybersecurity companion. Ask anything about penetration testing,
                         vulnerability assessment, exploit development, and more.
                     </p>
                     <div class="welcome-suggestions">
@@ -273,14 +275,22 @@
 
                                 <!-- Model Selector Dropdown -->
                                 <div class="model-selector">
+                                    <!-- Model Indicator (Local Only) -->
                                     <button class="model-select-btn" onclick="toggleModelDropdown()" id="modelSelectBtn">
                                         <i class="fas fa-microchip"></i>
-                                        <span id="selectedModel">GPT-4 Turbo</span>
+                                        <span id="selectedModel">Local Model</span>
                                         <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
                                     </button>
                                     <!-- Dropdown pilihan model LLM -->
                                     <div class="model-dropdown" id="modelDropdown">
-                                        <div class="model-option selected" onclick="selectModel('GPT-4 Turbo', this)">
+                                        <div class="model-option selected" onclick="selectModel('Local Model', this)">
+                                            <i class="fas fa-bolt"></i>
+                                            <div class="model-option-info">
+                                                <span class="model-option-name">Local Model</span>
+                                                <span class="model-option-desc">Run model on Computer</span>
+                                            </div>
+                                        </div>
+                                        <div class="model-option" onclick="selectModel('GPT-4 Turbo', this)">
                                             <i class="fas fa-bolt"></i>
                                             <div class="model-option-info">
                                                 <span class="model-option-name">GPT-4 Turbo</span>
@@ -320,18 +330,12 @@
                             </div>
                         </div>
 
-                        <!-- Textarea Input Chat -->
-                        <textarea 
-                            class="chat-input" 
-                            id="chatInput" 
-                            placeholder="Message DarkMind AI... (Shift + Enter for new line)"
-                            rows="1"
-                            onkeydown="handleKeyDown(event)"
-                            oninput="autoResize(this)"
-                        ></textarea>
+
 
                         <!-- Tombol Kirim -->
                         <div class="input-actions">
+                            <!-- Textarea Input Chat -->
+                            <textarea class="chat-input" id="chatInput" placeholder="Message DarkMind AI... (Shift + Enter for new line)" rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
                             <button class="btn-send" id="sendBtn" onclick="sendMessage()">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
@@ -342,17 +346,10 @@
         </main>
     </div>
 
-    <!-- ============================================================
-         JAVASCRIPT
-         ============================================================
-         Semua fungsi interaktif aplikasi:
-         - Sidebar toggle
-         - Theme toggle
-         - Chat functionality
-         - File upload
-         - Model selection
-         - Settings toggle
-    ============================================================ -->
-
+        <!-- Status Bar untuk error/loading indicator -->
+    <div class="status-bar" id="statusBar">
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span id="statusText">Connecting...</span>
+    </div>
 </body>
 </html>
