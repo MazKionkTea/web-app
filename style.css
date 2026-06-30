@@ -3,7 +3,7 @@
     ROOT VARIABLES & THEME SYSTEM
     ============================================================
     Variabel CSS untuk mengatur tema dark (default) dan light.
-    Menggunakan warna palette Hack The Box (hijau neon #9fef00 
+    Menggunakan warna palette Hack The Box (hijau neon #9fef00
     dengan background gelap).
 ============================================================ */
 :root {
@@ -752,8 +752,9 @@ body {
     display: flex;
     gap: 4px;
     margin-top: 8px;
-    opacity: 0;
+    opacity: 1;     /* SELALU TAMPIL */
     transition: opacity 0.2s;
+    justify-content: flex-end;  /* SEJAJAR KANAN */
 }
 .message:hover .message-actions-row {
     opacity: 1;
@@ -1135,7 +1136,7 @@ body {
     .app-tagline {
         display: none;
     }
-    
+
     /* Fix scroll di mobile */
     body {
         overflow: hidden;
@@ -1233,7 +1234,7 @@ body {
     .error-message i {
         margin-right: 8px;
     }
-    
+
     .status-bar {
         position: fixed;
         bottom: 100px;
