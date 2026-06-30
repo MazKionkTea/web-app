@@ -57,6 +57,7 @@ function toggleTheme() {
         icon.classList.add('fa-sun');
     }
     updateHighlightTheme();
+    localStorage.setItem('darkmind-theme', state.isDarkMode ? 'dark' : 'light');
 }
 
 function updateHighlightTheme() {
@@ -419,7 +420,7 @@ async function sendMessage() {
     userMessage.dataset.messageId = 'msg_' + Date.now(); // ← ID unik
     userMessage.dataset.content = userContent; // ← Simpan content asli
     userMessage.dataset.role = 'user';
-    let displayContent = renderMarkdown(text).replace(/\n/g, ' <br>');
+    let displayContent = renderMarkdown(text); //.replace(/\n/g, ' <br>')
     if (state.uploadedFile) {
         displayContent += `<br><small style="opacity:0.8"><i class="fas fa-paperclip"></i> ${escapeHtml(state.uploadedFile.name)}</small>`;
     }
@@ -451,21 +452,17 @@ async function sendMessage() {
     aiMessage.dataset.role = 'assistant';
     aiMessage.dataset.content = 'fullResponse';
     aiMessage.innerHTML = `<div class="message-content" id="aiResponseText"></div> <span class="message-time" id="aiResponseTime"></span> <div class="message-actions-row"> <button class="msg-action-btn" onclick="regenerateMessage(this)" title="Regenerate"> <i class="fas fa-redo"></i> </button> <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"> <i class="fas fa-copy"></i> </button> </div>`;
-    // Show actions on hover
-    // aiMessage.addEventListener('mouseenter', () => {
-    //     aiMessage.querySelector('.message-actions-row').style.opacity = '1';
-    // });
-    // aiMessage.addEventListener('mouseleave', () => {
-    //     aiMessage.querySelector('.message-actions-row').style.opacity = '0';
-    // });
+
     messagesArea.appendChild(aiMessage);
     messagesArea.scrollTop = messagesArea.scrollHeight;
     const aiTextEl = aiMessage.querySelector('#aiResponseText');
+    const aiTimeEl = aiMessage.querySelector('#aiResponseTime');
 
     // Inisialisasi controller dan ambil reader
     generationAbortController = new AbortController();
     const signal = generationAbortController.signal;
 
+    let fullResponse = '';
     try {
         console.log('Sending to:', CHAT_ENDPOINT);
         console.log('Messages:', state.messages);
@@ -500,7 +497,7 @@ async function sendMessage() {
         // Ambil reader
         currentStreamReader = response.body.getReader(); // Simpan reader ke variabel global
         const decoder = new TextDecoder();
-        let fullResponse = '';
+        // let fullResponse = '';
         let buffer = '';
 
         showStatus('AI is thinking...', 'connecting');
@@ -540,7 +537,8 @@ async function sendMessage() {
                             messagesArea.scrollTop = messagesArea.scrollHeight;
                             // Panggil highlightAll setelah innerHTML berubah
                             if (typeof hljs !== 'undefined') {
-                                hljs.highlightAll();
+                                aiTextEl.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+                                // hljs.highlightAll();
                             }
                         }
                     } catch (e) {
@@ -561,7 +559,8 @@ async function sendMessage() {
 
         // Selesai streaming
         hideStatus();
-        document.getElementById('aiResponseTime').textContent = new Date().toLocaleTimeString();
+        aiTimeEl.textContent = new Date().toLocaleTimeString();
+        aiMessage.dataset.content = fullResponse;
 
         // Simpan response ke session history
         state.messages.push({ role: 'assistant', content: fullResponse });
@@ -570,9 +569,24 @@ async function sendMessage() {
         await saveChatToBackend();
     } catch (error) {
         hideStatus();
+
         console.error('AI Error:', error);
         console.error('Error type:', error.name);
         console.error('Error message:', error.message);
+
+        if (error.name === 'AbortError') {
+            // ✅ dihentikan user, bukan error — simpan apa yang sudah ada
+            if (fullResponse) {
+                aiTextEl.innerHTML = renderMarkdown(fullResponse) +
+                    '<br><small style="opacity:0.6"><i class="fas fa-stop"></i> Generation stopped</small>';
+                document.getElementById('aiResponseTime').textContent = new Date().toLocaleTimeString();
+                state.messages.push({ role: 'assistant', content: fullResponse });
+                if (!state.isTempChat) await saveChatToBackend();
+            } else {
+            aiMessage.remove(); // belum ada teks sama sekali, hapus bubble kosong
+            }
+        } else {
+            // error koneksi sungguhan — tampilan seperti semula
         let userMsg = error.message;
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
             userMsg = 'Cannot connect to Python backend at port 8000. Please make sure backend.py is running.';
@@ -589,6 +603,7 @@ async function sendMessage() {
     state.isTyping = false;
     updateSendButtonState();
     messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
 }
 
 
@@ -641,6 +656,7 @@ async function resendToAI() {
     // Inisialisasi controller dan ambil reader untuk regenerate
     generationAbortController = new AbortController();
     const signal = generationAbortController.signal;
+    let fullResponse = '';
 
     try {
         const response = await fetch(CHAT_ENDPOINT, {
@@ -664,7 +680,7 @@ async function resendToAI() {
         // Ambil reader
         currentStreamReader = response.body.getReader();
         const decoder = new TextDecoder();
-        let fullResponse = '';
+        // let fullResponse = '';
         let buffer = '';
 
         showStatus('AI is thinking...', 'connecting');
@@ -702,7 +718,8 @@ async function resendToAI() {
                             messagesArea.scrollTop = messagesArea.scrollHeight;
                              // Panggil highlightAll setelah innerHTML berubah
                             if (typeof hljs !== 'undefined') {
-                                hljs.highlightAll();
+                                aiTextEl.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+                                // hljs.highlightAll();
                             }
                         }
                     } catch (e) {
@@ -743,16 +760,18 @@ async function resendToAI() {
  * Edit pesan user — hapus pesan ini dan semua setelahnya, isi ke input.
  */
 function editMessage(btn) {
+    if (state.isTyping) return; // ✅ guard baru
+
     const msgDiv = btn.closest('.message');
     if (!msgDiv) return;
     const content = msgDiv.dataset.content;
     const messagesArea = document.getElementById('messagesArea');
-    const allMessages = Array.from(messagesArea.querySelectorAll('.message'));
+
+    // ✅ ambil SEMUA bubble, termasuk error-message, biar ikut kehapus
+    const allMessages = Array.from(messagesArea.querySelectorAll('.message, .error-message'));
     const msgIndex = allMessages.indexOf(msgDiv);
     if (msgIndex === -1) return;
 
-    // Hapus dari state: pesan ini dan semua setelahnya
-    // Hitung berapa message di DOM sebelum index ini
     let stateIndex = 0;
     for (let i = 0; i <= msgIndex; i++) {
         if (allMessages[i].dataset.role === 'user' || allMessages[i].dataset.role === 'assistant') {
@@ -761,17 +780,14 @@ function editMessage(btn) {
     }
     state.messages = state.messages.slice(0, stateIndex - 1);
 
-    // Hapus dari UI: pesan ini dan semua setelahnya
     for (let i = allMessages.length - 1; i >= msgIndex; i--) {
         allMessages[i].remove();
     }
 
-    // Isi ke input
     document.getElementById('chatInput').value = content;
     document.getElementById('chatInput').focus();
     autoResize(document.getElementById('chatInput'));
 }
-
 
 /**
  * Copy pesan ke clipboard.
@@ -936,7 +952,11 @@ async function deleteChat(chatId, event) {
     if (!confirm('Delete this conversation?')) return;
 
     try {
-        await fetch(`${HISTORY_ENDPOINT}/delete?chat_id=${chatId}`, { method: 'POST' });
+        await fetch(`${HISTORY_ENDPOINT}/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: chatId })
+        });
         delete state.chats[chatId];
 
         if (state.currentChatId === chatId) {
@@ -946,7 +966,6 @@ async function deleteChat(chatId, event) {
             document.getElementById('messagesArea').classList.add('hidden');
             document.getElementById('messagesArea').innerHTML = '';
         }
-
         renderHistoryList();
     } catch (e) {
         console.error('Failed to delete chat:', e);
