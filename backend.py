@@ -4,7 +4,6 @@ DarkMind AI Backend - Step 2 (Fixed)
 1. Jalankan llama-server (subprocess)
 2. Jalankan history server (Python http.server)
 """
-
 import subprocess
 import sys
 import os
@@ -14,20 +13,18 @@ import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler, BaseHTTPRequestHandler
 
 # ============================================================
-# KONFIGURASI (HARUS DI ATAS SEMUA FUNGSI)
+# KONFIGURASI
 # ============================================================
-MODEL_PATH = "/home/kionk/Documents/py-files/AI/model/Qwen3.5-2B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"  # Pastikan path ini 100% benar!
+MODEL_PATH = "/home/kionk/Documents/py-files/AI/model/Qwen3.5-2B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"
 MMPROJ_PATH = "/home/kionk/Documents/py-files/AI/model/mmproj-Qwen3.5-2B-Uncensored-HauhauCS-Aggressive-f16.gguf"
 LLAMA_SERVER_PORT = 8080
 BACKEND_PORT = 8000
 HISTORY_FILE = "chat_history.json"
-
 STATIC_PORT = 3000
-FRONTEND_DIR = os.path.dirname(os.path.abspath(__file__))  # Folder tempat backend.py berada
+FRONTEND_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class StaticHandler(SimpleHTTPRequestHandler):
     """Serve static files dengan CORS support."""
-
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         super().end_headers()
@@ -37,10 +34,9 @@ class StaticHandler(SimpleHTTPRequestHandler):
 
 def start_static_server():
     """Jalankan static file server di thread terpisah."""
-    os.chdir(FRONTEND_DIR)  # Pastikan serve dari folder frontend
+    os.chdir(FRONTEND_DIR)
     server = HTTPServer(('0.0.0.0', STATIC_PORT), StaticHandler)
     print(f"[SUCCESS] Static server running on http://0.0.0.0:{STATIC_PORT}")
-
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server
@@ -49,7 +45,6 @@ def start_static_server():
 # HISTORY FUNCTIONS
 # ============================================================
 def load_history():
-    """Load history dari file JSON."""
     if not os.path.exists(HISTORY_FILE):
         return {}
     try:
@@ -60,7 +55,6 @@ def load_history():
         return {}
 
 def save_history(history):
-    """Save history ke file JSON."""
     try:
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
@@ -71,20 +65,15 @@ def save_history(history):
 # HISTORY REQUEST HANDLER
 # ============================================================
 class HistoryHandler(BaseHTTPRequestHandler):
-    """Handle HTTP request untuk history API."""
-
     def log_message(self, format, *args):
-        """Override: suppress default logging."""
         pass
 
     def _send_cors_headers(self):
-        """Tambah CORS header agar browser bisa akses."""
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def _send_json(self, data, status=200):
-        """Kirim response JSON."""
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self._send_cors_headers()
@@ -92,13 +81,11 @@ class HistoryHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(data).encode('utf-8'))
 
     def do_OPTIONS(self):
-        """Handle preflight CORS request."""
         self.send_response(200)
         self._send_cors_headers()
         self.end_headers()
 
     def do_GET(self):
-        """Handle GET request."""
         if self.path == '/history':
             history = load_history()
             self._send_json(history)
@@ -106,10 +93,8 @@ class HistoryHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "Not found"}, 404)
 
     def do_POST(self):
-        """Handle POST request."""
         content_length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(content_length).decode('utf-8')
-
         try:
             data = json.loads(body) if body else {}
         except json.JSONDecodeError:
@@ -147,7 +132,6 @@ class HistoryHandler(BaseHTTPRequestHandler):
                 self._send_json({"status": "renamed", "id": chat_id})
             else:
                 self._send_json({"error": "Missing id or title"}, 400)
-
         else:
             self._send_json({"error": "Not found"}, 404)
 
@@ -155,33 +139,22 @@ class HistoryHandler(BaseHTTPRequestHandler):
 # JALANKAN LLAMA-SERVER
 # ============================================================
 def start_llama_server():
-    """Jalankan llama-server sebagai subprocess."""
-    import time # 1. Import time
     cmd = [
         "/home/kionk/llama.cpp/build/bin/llama-server",
-        "-m", MODEL_PATH,  # 2. Pastikan path model ini benar
+        "-m", MODEL_PATH,
         "--mmproj", MMPROJ_PATH,
         "-rea", "off",
         "--host", "0.0.0.0",
         "--port", str(LLAMA_SERVER_PORT),
     ]
-
     print(f"[INFO] Starting llama-server...")
     print(f"[INFO] Command: {' '.join(cmd)}")
-
     try:
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         print(f"[INFO] llama-server PID: {process.pid}")
-        print(f"[INFO] Waiting for model to load (this may take 10-30 seconds)...")
-
-        # Tunggu lebih lama karena model perlu loading
-        max_wait = 60  # detik
+        print(f"[INFO] Waiting for model to load...")
+        
+        max_wait = 60
         for i in range(max_wait):
             time.sleep(1)
             try:
@@ -193,10 +166,9 @@ def start_llama_server():
                 if i % 5 == 0:
                     print(f"[INFO] Still loading... ({i}s)")
                 continue
-
+        
         print(f"[WARNING] Timeout waiting for llama-server, but process is running")
         return process
-
     except FileNotFoundError:
         print(f"[ERROR] 'llama-server' command not found.")
         sys.exit(1)
@@ -208,10 +180,8 @@ def start_llama_server():
 # JALANKAN HISTORY SERVER
 # ============================================================
 def start_history_server():
-    """Jalankan history server di thread terpisah."""
     server = HTTPServer(('0.0.0.0', BACKEND_PORT), HistoryHandler)
     print(f"[SUCCESS] History server running on port {BACKEND_PORT}")
-
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server
@@ -224,13 +194,8 @@ if __name__ == "__main__":
     print("DarkMind AI Backend - All-in-One")
     print("=" * 50)
 
-    # 1. Static file server (port 3000)
     static_server = start_static_server()
-
-    # 2. llama-server (port 8080)
     llama_process = start_llama_server()
-
-    # 3. History API (port 8000)
     history_server = start_history_server()
 
     print("\n" + "=" * 50)
