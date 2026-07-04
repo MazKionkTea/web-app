@@ -1,355 +1,206 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jembut DarkMind AI - LLM Interface</title>
-    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/lib/marked.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script> -->
-
     <link rel="stylesheet" href="style.css">
-    <script src="app.js"></script>
-    <link rel="stylesheet" href="all.min.css"> <!-- altenatif offline dari https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css -->
-    <script src="marked.min.js"></script> <!-- altenatif offline dari https://cdn.jsdelivr.net/npm/marked@9.1.6/lib/marked.umd.min.js -->
-    <script src="highlight.min.js"></script> <!-- altenatif offline dari https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js -->
-<base target="_blank">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link id="hljs-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <!-- ============================================================
-         OVERLAY UNTUK MOBILE
-         ============================================================
-         Overlay gelap yang muncul saat sidebar terbuka di perangkat
-         mobile. Klik overlay akan menutup sidebar.
-    ============================================================ -->
+<!-- Overlay for Mobile Sidebar -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-    <!-- ============================================================
-         APP CONTAINER
-         ============================================================
-         Grid container utama yang menyusun layout sidebar dan
-         main content. Class 'sidebar-closed' ditambahkan via JS
-         untuk mengatur state sidebar.
-    ============================================================ -->
-    <div class="app-container" id="appContainer">
-        <!-- Tombol toggle sidebar (hamburger icon) -->
-        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Sidebar">
-            <i class="fas fa-bars" id="toggleIcon"></i>
-        </button>
+<div class="app-container" id="appContainer">
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars" id="toggleIcon"></i>
+    </button>
 
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="user-profile">
+            <div class="user-avatar">P</div>
+            <div class="user-name">Peler</div>
+            <div class="user-role">CyberSec Analyst</div>
+            <div class="user-status"><span class="status-dot"></span> Pro Member Online</div>
+            <div class="ip-display" id="ipAddressDisplay" title="Copy IP">
+                <i class="fas fa-network-wired"></i> <span>Detecting...</span>
+            </div>
+        </div>
 
-        <!-- ============================================================
-             SIDEBAR
-             ============================================================
-             Sidebar navigasi di sisi kiri dengan fitur lengkap:
-             - Toggle button
-             - Profil user
-             - Navigasi: New Chat, History, AI Agents, Projects, Settings
-        ============================================================ -->
-        <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <button class="nav-item btn-new-chat" onclick="startNewChat()">
+                <i class="fas fa-plus"></i> New Chat
+            </button>
 
-            <!-- --- USER PROFILE SECTION --- -->
-            <div class="user-profile">
-                <div class="user-avatar">
-                    <i class="fas fa-user"></i>
+            <div class="nav-section">
+                <div class="nav-section-title">AI Agents</div>
+                <div class="nav-item" onclick="toggleAgentSkills()">
+                    <i class="fas fa-robot"></i> AI Agents <i class="fas fa-chevron-down" id="agentChevron" style="margin-left:auto; font-size:10px;"></i>
                 </div>
-                <div class="user-name">CyberSec Analyst</div>
-                <div class="user-role">Pro Member</div>
-                <div class="user-status">
-                    <span class="status-dot"></span>
-                    <span>Online</span>
-                </div>
-                <!-- IP Address Display -->
-                <div class="ip-display" id="ipAddressDisplay" title="">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Detecting...</span>
+                <div class="agent-skills" id="agentSkills">
+                    <div class="skill-tag selected" onclick="selectSkill(this)"><i class="fas fa-shield-alt"></i> Cyber Security</div>
+                    <div class="skill-tag" onclick="selectSkill(this)"><i class="fas fa-code"></i> Code Review</div>
+                    <div class="skill-tag" onclick="selectSkill(this)"><i class="fas fa-bug"></i> Bug Bounty</div>
+                    <div class="skill-tag" onclick="selectSkill(this)"><i class="fas fa-search"></i> OSINT</div>
                 </div>
             </div>
 
-            <!-- --- SIDEBAR NAVIGATION --- -->
-            <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Projects</div>
+                <div class="nav-item" onclick="toggleProjects()">
+                    <i class="fas fa-folder"></i> Projects <i class="fas fa-chevron-down" id="projectChevron" style="margin-left:auto; font-size:10px;"></i>
+                </div>
+                <div class="projects-list" id="projectsList">
+                    <div class="project-item">HTB Academy Labs</div>
+                    <div class="project-item">CTF Writeups</div>
+                    <div class="project-item">Malware Analysis</div>
+                </div>
+            </div>
 
-                <!-- Tombol New Chat (highlighted) -->
-                <button class="nav-item btn-new-chat" onclick="startNewChat()">
-                    <i class="fas fa-plus"></i>
-                    <span>New Chat</span>
+            <div class="nav-section">
+                <div class="nav-section-title">History</div>
+                <div id="historyList">
+                    <div style="padding: 12px; color: var(--text-muted); font-size: 12px; text-align: center;">Loading...</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">System</div>
+                <div class="nav-item" onclick="toggleSettings()">
+                    <i class="fas fa-cog"></i> Settings <i class="fas fa-chevron-down" id="settingsChevron" style="margin-left:auto; font-size:10px;"></i>
+                </div>
+                <div class="settings-panel" id="settingsPanel">
+                    <div class="setting-item">Auto-save Chat <div class="toggle-switch active" onclick="toggleSwitch(this)"></div></div>
+                    <div class="setting-item">Sound Effects <div class="toggle-switch" onclick="toggleSwitch(this)"></div></div>
+                    <div class="setting-item">Stream Response <div class="toggle-switch active" onclick="toggleSwitch(this)"></div></div>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <div class="app-logo"><i class="fas fa-terminal"></i> Jembut DarkMind AI</div>
+                <div class="app-tagline">Advanced LLM Interface</div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" id="tempChatBtn" onclick="toggleTempChat()" title="Temporary Chat">
+                    <i class="fas fa-user-secret"></i>
                 </button>
-                
-                <!-- Section: AI Agents -->
-                <div class="nav-section">
-                    <div class="nav-section-title">AI Agents</div>
-                    <!-- Tombol utama AI Agent dengan dropdown toggle -->
-                    <button class="nav-item" onclick="toggleAgentSkills()">
-                        <i class="fas fa-robot"></i>
-                        <span>AI Agents</span>
-                        <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 12px;" id="agentChevron"></i>
-                    </button>
-                    <!-- Container skill tags AI (expandable) -->
-                    <div class="agent-skills" id="agentSkills">
-                        <div class="skill-tag selected" onclick="selectSkill(this)">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Cyber Security</span>
-                        </div>
-                        <div class="skill-tag" onclick="selectSkill(this)">
-                            <i class="fas fa-code"></i>
-                            <span>Code Review</span>
-                        </div>
-                        <div class="skill-tag" onclick="selectSkill(this)">
-                            <i class="fas fa-bug"></i>
-                            <span>Bug Bounty</span>
-                        </div>
-                        <div class="skill-tag" onclick="selectSkill(this)">
-                            <i class="fas fa-terminal"></i>
-                            <span>OSINT</span>
-                        </div>
-                        <div class="skill-tag" onclick="selectSkill(this)">
-                            <i class="fas fa-lock"></i>
-                            <span>Cryptography</span>
-                        </div>
-                    </div>
-                </div>
+                <button class="header-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </header>
 
-                <!-- Section: Projects -->
-                <div class="nav-section">
-                    <div class="nav-section-title">Projects</div>
-                    <button class="nav-item" onclick="toggleProjects()">
-                        <i class="fas fa-folder-open"></i>
-                        <span>Projects</span>
-                        <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 12px;" id="projectChevron"></i>
-                    </button>
-                    <!-- Daftar project (expandable) -->
-                    <div class="projects-list" id="projectsList">
-                        <div class="project-item">HTB Academy Labs</div>
-                        <div class="project-item">CTF Writeups</div>
-                        <div class="project-item">Malware Analysis</div>
-                        <div class="project-item">Red Team Ops</div>
-                    </div>
-                </div>
+        <div class="search-bar-container">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search history or content...">
+                <span class="search-shortcut">Ctrl K</span>
+            </div>
+        </div>
 
-                <!-- Section: Chat History -->
-                <div class="nav-section">
-                    <div class="nav-section-title">History</div>
-                    <div id="historyList">
-                        <!-- History items akan dirender via JavaScript -->
-                        <div style="padding: 12px; color: var(--text-muted); font-size: 12px; text-align: center;">Loading...</div>
+        <div class="chat-container">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-icon"><i class="fas fa-brain"></i></div>
+                <h1 class="welcome-title">How can I assist you today?</h1>
+                <p class="welcome-subtitle">DarkMind AI is your advanced cybersecurity companion. Ask anything about penetration testing, vulnerability assessment, exploit development, and more.</p>
+                <div class="welcome-suggestions">
+                    <div class="suggestion-card" onclick="sendSuggestion('Explain OWASP Top 10')">
+                        <i class="fas fa-shield-alt"></i>
+                        <h4>OWASP Top 10</h4>
+                        <p>Learn about critical web security risks</p>
                     </div>
-                </div>
-                
-                <!-- Section: Settings -->
-                <div class="nav-section">
-                    <div class="nav-section-title">System</div>
-                    <button class="nav-item" onclick="toggleSettings()">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
-                        <i class="fas fa-chevron-down" style="margin-left: auto; font-size: 12px;" id="settingsChevron"></i>
-                    </button>
-                    <!-- Panel pengaturan (expandable) -->
-                    <div class="settings-panel" id="settingsPanel">
-                        <div class="setting-item">
-                            <span>Notifications</span>
-                            <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
-                        </div>
-                        <div class="setting-item">
-                            <span>Auto-save Chat</span>
-                            <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
-                        </div>
-                        <div class="setting-item">
-                            <span>Sound Effects</span>
-                            <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
-                        </div>
-                        <div class="setting-item">
-                            <span>Stream Response</span>
-                            <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
-                        </div>
+                    <div class="suggestion-card" onclick="sendSuggestion('How to start Reconnaissance?')">
+                        <i class="fas fa-binoculars"></i>
+                        <h4>Reconnaissance</h4>
+                        <p>Master information gathering techniques</p>
                     </div>
-                </div>
-            </nav>
-        </aside>
-
-        <!-- ============================================================
-             MAIN CONTENT
-             ============================================================
-             Area utama aplikasi yang berisi:
-             - Header dengan judul dan kontrol
-             - Search bar
-             - Chat interface (welcome screen / messages / input)
-        ============================================================ -->
-        <main class="main-content">
-
-            <!-- --- HEADER --- -->
-            <header class="main-header">
-                <div class="header-left">
-                    <!-- Logo aplikasi dengan ikon -->
-                    <div class="app-logo">
-                        <i class="fas fa-brain"></i>
-                        <span>Jembut DarkMind AI</span>
-                        <span class="app-tagline">Advanced LLM Interface</span>
+                    <div class="suggestion-card" onclick="sendSuggestion('Write a Python port scanner')">
+                        <i class="fab fa-python"></i>
+                        <h4>Python Tools</h4>
+                        <p>Build custom security tools</p>
                     </div>
-                </div>
-                <div class="header-right">
-                    <!-- Tombol Temporary Chat -->
-                    <button class="header-btn" id="tempChatBtn" onclick="toggleTempChat()" title="Temporary Chat">
-                        <i class="fas fa-fire"></i>
-                        <span class="tooltip">Temporary Chat</span>
-                    </button>
-                    <!-- Tombol Toggle Dark/Light Mode -->
-                    <button class="header-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle Theme">
-                        <i class="fas fa-moon" id="themeIcon"></i>
-                        <span class="tooltip">Toggle Theme</span>
-                    </button>
-                </div>
-            </header>
-
-            <!-- --- SEARCH BAR --- -->
-            <div class="search-bar-container">
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="search-input" placeholder="Search conversations, prompts, or settings..." id="searchInput">
-                    <span class="search-shortcut">Ctrl K</span>
+                    <div class="suggestion-card" onclick="sendSuggestion('Explain Buffer Overflow')">
+                        <i class="fas fa-bomb"></i>
+                        <h4>Exploitation</h4>
+                        <p>Understand binary exploitation</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- --- CHAT CONTAINER --- -->
-            <div class="chat-container">
+            <!-- Messages Area -->
+            <div class="messages-area hidden" id="messagesArea"></div>
 
-                <!-- Welcome Screen (tampil saat belum ada chat aktif) -->
-                <div class="welcome-screen" id="welcomeScreen">
-                    <div class="welcome-icon">
-                        <i class="fas fa-brain"></i>
-                    </div>
-                    <h1 class="welcome-title">How can I assist you today?</h1>
-                    <p class="welcome-subtitle">
-                        DarkMind AI is your advanced cybersecurity companion. Ask anything about penetration testing,
-                        vulnerability assessment, exploit development, and more.
-                    </p>
-                    <div class="welcome-suggestions">
-                        <div class="suggestion-card" onclick="sendSuggestion('Explain the OWASP Top 10 vulnerabilities')">
-                            <i class="fas fa-shield-alt"></i>
-                            <h4>OWASP Top 10</h4>
-                            <p>Learn about critical web security risks</p>
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <div class="input-controls">
+                        <div class="input-controls-left">
+                            <input type="file" id="fileInput" onchange="handleFileUpload(this)">
+                            <button class="btn-upload" onclick="document.getElementById('fileInput').click()" title="Upload File">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <div class="file-info" id="fileInfo">
+                                <i class="fas fa-file-alt"></i>
+                                <span id="fileName"></span>
+                                <button onclick="clearFile()"><i class="fas fa-times"></i></button>
+                            </div>
                         </div>
-                        <div class="suggestion-card" onclick="sendSuggestion('How to perform a proper reconnaissance?')">
-                            <i class="fas fa-search"></i>
-                            <h4>Reconnaissance</h4>
-                            <p>Master information gathering techniques</p>
-                        </div>
-                        <div class="suggestion-card" onclick="sendSuggestion('Write a Python script for port scanning')">
-                            <i class="fas fa-code"></i>
-                            <h4>Python Tools</h4>
-                            <p>Build custom security tools</p>
-                        </div>
-                        <div class="suggestion-card" onclick="sendSuggestion('Explain buffer overflow exploitation')">
-                            <i class="fas fa-bug"></i>
-                            <h4>Exploitation</h4>
-                            <p>Understand binary exploitation</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Messages Area (tersembunyi secara default, muncul saat chat aktif) -->
-                <div class="messages-area hidden" id="messagesArea">
-                    <!-- Pesan akan ditambahkan via JavaScript -->
-                </div>
-
-                <!-- --- INPUT AREA --- -->
-                <div class="input-area">
-                    <div class="input-wrapper">
-                        <!-- Controls: Upload & Model Selector -->
-                        <div class="input-controls">
-                            <div class="input-controls-left">
-                                <!-- Tombol Upload Dokumen -->
-                                <button class="btn-upload" onclick="document.getElementById('fileInput').click()" title="Upload Document">
-                                    <i class="fas fa-paperclip"></i>
-                                </button>
-                                <!-- Hidden file input untuk upload -->
-                                <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx,.py,.js,.md" onchange="handleFileUpload(this)">
-
-                                <!-- Info file yang diupload -->
-                                <div class="file-info" id="fileInfo">
-                                    <i class="fas fa-file"></i>
-                                    <span id="fileName">document.pdf</span>
-                                    <button onclick="clearFile()" title="Remove file">
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                        <div class="model-selector">
+                            <button class="model-select-btn" id="modelSelectBtn" onclick="toggleModelDropdown()">
+                                <i class="fas fa-microchip"></i>
+                                <span id="selectedModel">Local Model</span>
+                                <i class="fas fa-chevron-down" style="font-size:10px;"></i>
+                            </button>
+                            <div class="model-dropdown" id="modelDropdown">
+                                <div class="model-option selected" onclick="selectModel('Local Model', this)">
+                                    <i class="fas fa-server"></i>
+                                    <div class="model-option-info">
+                                        <div class="model-option-name">Local Model</div>
+                                        <div class="model-option-desc">Run model on Computer</div>
+                                    </div>
                                 </div>
-
-                                <!-- Model Selector Dropdown -->
-                                <div class="model-selector">
-                                    <!-- Model Indicator (Local Only) -->
-                                    <button class="model-select-btn" onclick="toggleModelDropdown()" id="modelSelectBtn">
-                                        <i class="fas fa-microchip"></i>
-                                        <span id="selectedModel">Local Model</span>
-                                        <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
-                                    </button>
-                                    <!-- Dropdown pilihan model LLM -->
-                                    <div class="model-dropdown" id="modelDropdown">
-                                        <div class="model-option selected" onclick="selectModel('Local Model', this)">
-                                            <i class="fas fa-bolt"></i>
-                                            <div class="model-option-info">
-                                                <span class="model-option-name">Local Model</span>
-                                                <span class="model-option-desc">Run model on Computer</span>
-                                            </div>
-                                        </div>
-                                        <div class="model-option" onclick="selectModel('GPT-4 Turbo', this)">
-                                            <i class="fas fa-bolt"></i>
-                                            <div class="model-option-info">
-                                                <span class="model-option-name">GPT-4 Turbo</span>
-                                                <span class="model-option-desc">Most capable model</span>
-                                            </div>
-                                        </div>
-                                        <div class="model-option" onclick="selectModel('GPT-4o', this)">
-                                            <i class="fas fa-rocket"></i>
-                                            <div class="model-option-info">
-                                                <span class="model-option-name">GPT-4o</span>
-                                                <span class="model-option-desc">Fast & efficient</span>
-                                            </div>
-                                        </div>
-                                        <div class="model-option" onclick="selectModel('Claude 3.5', this)">
-                                            <i class="fas fa-brain"></i>
-                                            <div class="model-option-info">
-                                                <span class="model-option-name">Claude 3.5 Sonnet</span>
-                                                <span class="model-option-desc">Great for coding</span>
-                                            </div>
-                                        </div>
-                                        <div class="model-option" onclick="selectModel('Llama 3', this)">
-                                            <i class="fas fa-code"></i>
-                                            <div class="model-option-info">
-                                                <span class="model-option-name">Llama 3 70B</span>
-                                                <span class="model-option-desc">Open source model</span>
-                                            </div>
-                                        </div>
-                                        <div class="model-option" onclick="selectModel('Gemini Pro', this)">
-                                            <i class="fas fa-gem"></i>
-                                            <div class="model-option-info">
-                                                <span class="model-option-name">Gemini 1.5 Pro</span>
-                                                <span class="model-option-desc">Long context window</span>
-                                            </div>
-                                        </div>
+                                <div class="model-option" onclick="selectModel('GPT-4 Turbo', this)">
+                                    <i class="fas fa-bolt"></i>
+                                    <div class="model-option-info">
+                                        <div class="model-option-name">GPT-4 Turbo</div>
+                                        <div class="model-option-desc">Most capable model</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-
-
-                        <!-- Tombol Kirim -->
-                        <div class="input-actions">
-                            <!-- Textarea Input Chat -->
-                            <textarea class="chat-input" id="chatInput" placeholder="Message DarkMind AI... (Shift + Enter for new line)" rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
-                            <button class="btn-send" id="sendBtn" onclick="sendMessage()">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
+                    </div>
+                    <textarea class="chat-input" id="chatInput" placeholder="Type your message..." rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                    <div class="input-actions">
+                        <button class="btn-send" id="sendBtn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                        <button class="btn-stop" id="stopBtn" onclick="stopGeneration()"><i class="fas fa-stop"></i></button>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
+</div>
 
-        <!-- Status Bar untuk error/loading indicator -->
-    <div class="status-bar" id="statusBar">
-        <i class="fas fa-circle-notch fa-spin"></i>
-        <span id="statusText">Connecting...</span>
-    </div>
+<!-- Status Bar -->
+<div class="status-bar" id="statusBar">
+    <i class="fas fa-circle-notch fa-spin"></i>
+    <span id="statusText">Connecting...</span>
+</div>
+
+<!-- <script src="app.js"></script> -->
+<script src="sidebar.js"></script>
+<script src="header.js"></script>
+<script src="app-container.js"></script>
+<script src="message-area.js"></script>
+<script src="input-area.js"></script>
 </body>
 </html>
