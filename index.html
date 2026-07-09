@@ -6,7 +6,8 @@
     <title>Jembut DarkMind AI - LLM Interface</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link id="hljs-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <link id="hljs-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"> 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -140,6 +141,52 @@
             <!-- Messages Area -->
             <div class="messages-area hidden" id="messagesArea"></div>
 
+            <!-- Template pesan user -->
+            <template id="userMessageTemplate">
+                <div class="message user" data-message-id="" data-content="" data-role="user">
+                    <div class="message-content"></div>
+                    <span class="message-time"></span>
+                    <div class="message-actions-row">
+                        <button class="msg-action-btn" title="Edit"><i class="fas fa-pen"></i></button>
+                        <button class="msg-action-btn" title="Copy"><i class="fas fa-copy"></i></button>
+                        <button class="msg-action-btn" title="Branch"><i class="fas fa-code-branch"></i></button>
+                        <button class="msg-action-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Template pesan AI -->
+            <template id="aiMessageTemplate">
+                <div class="message assistant" data-role="assistant" data-content="">
+                    <div class="message-content"></div>
+                    
+                    <!-- Info bar -->
+                    <div class="info-bar">
+                        <div class="info-model">
+                            <i class="fas fa-cube"></i>
+                            <span class="info-model-name"></span>
+                            <span class="info-badge info-size"></span>
+                            <span class="info-badge info-quant"></span>
+                        </div>
+                        <div class="info-stats">
+                            <span class="info-stat"><i class="fas fa-font"></i> <span class="info-tokens">0</span> tokens</span>
+                            <span class="info-stat"><i class="fas fa-clock"></i> <span class="info-time">0s</span></span>
+                            <span class="info-stat"><i class="fas fa-tachometer-alt"></i> <span class="info-speed">0</span> t/s</span>
+                        </div>
+                    </div>
+                    
+                    <!-- <span class="message-time"></span> -->
+                    <div class="message-actions-row">
+                        <div class="message-time"><span></span></div>
+                        
+                        <button class="msg-action-btn" title="Regenerate"><i class="fas fa-redo"></i></button>
+                        <button class="msg-action-btn" title="Copy"><i class="fas fa-copy"></i></button>
+                        <button class="msg-action-btn" title="Branch"><i class="fas fa-code-branch"></i></button>
+                        <button class="msg-action-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </template>
+
             <!-- Input Area -->
             <div class="input-area">
                 <div class="input-wrapper">
@@ -197,10 +244,10 @@
 </div>
 
 <!-- <script src="app.js"></script> -->
-<script src="sidebar.js"></script>
 <script src="header.js"></script>
 <script src="app-container.js"></script>
 <script src="message-area.js"></script>
+<script src="sidebar.js"></script>
 <script src="input-area.js"></script>
 </body>
 </html>
