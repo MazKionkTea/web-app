@@ -304,7 +304,6 @@ async function sendMessage() {
         aiMessage.dataset.content = fullResponse;
         state.messages.push({ role: 'assistant', content: fullResponse });
         await saveChatToBackend(state.uploadedFileId);
-        clearFile();
 
     } catch (error) {
         hideStatus();
