@@ -106,7 +106,8 @@ function getRequestConfig() {
         return {
             endpoint: RAG_ENDPOINT,
             body: JSON.stringify({ 
-                messages: state.messages, 
+                messages: state.messages,
+                file_id: state.uploadedFileId,
                 top_k: 3, 
                 temperature: 0.7, 
                 max_tokens: 4096 
