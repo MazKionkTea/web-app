@@ -83,14 +83,21 @@ function toggleProjects() {
 // ============================================================
 
 // [Elemen UI: history] Menyimpan chat saat ini ke backend database
-async function saveChatToBackend() {
+async function saveChatToBackend(fileId = null) {  // ← tambahkan parameter
     if (!state.currentChatId || state.messages.length === 0) return;
     const firstUserMsg = state.messages.find(m => m.role === 'user');
     const title = firstUserMsg ? firstUserMsg.content.substring(0, 30) + (firstUserMsg.content.length > 30 ? '...' : '') : 'New Chat';
     try {
         await fetch(`${HISTORY_ENDPOINT}/save`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: state.currentChatId, title: title, messages: state.messages, timestamp: Date.now(), model: state.currentModel })
+            body: JSON.stringify({ 
+                id: state.currentChatId,
+                title: title,
+                messages: state.messages,
+                timestamp: Date.now(),
+                model: state.currentModel,
+                file_id: fileId || state.uploadedFileId || null  // ← gunakan parameter dulu
+            })
         });
         renderHistoryList();
     } catch (e) { console.warn('Failed to save to backend:', e); }
@@ -145,16 +152,28 @@ async function loadChat(chatId) {
     const messagesArea = document.getElementById('messagesArea');
     messagesArea.classList.remove('hidden');
     messagesArea.innerHTML = '';
-
     state.messages.forEach(msg => {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${msg.role}`;
-        msgDiv.innerHTML = `
-            <div class="markdown-body">${renderMarkdown(msg.content)}</div>
-            <span class="message-time">${new Date(msg.timestamp || Date.now()).toLocaleTimeString()}</span>
-        `;
-        messagesArea.appendChild(msgDiv);
+        const templateId = msg.role === 'user' ? 'userMessageTemplate' : 'aiMessageTemplate';
+        const msgDiv = createMessageFromTemplate(templateId, {
+            content: msg.content,
+            html: renderMarkdown(msg.content),
+            time: new Date(msg.timestamp || Date.now()).toLocaleTimeString(),
+            actions: msg.role === 'user' ? {
+                onEdit: function() { editMessage(this); },
+                onCopy: function() { copyMessage(this); }
+            } : {
+                onRegenerate: function() { regenerateMessage(this); },
+                onCopy: function() { copyMessage(this); }
+            }
+        });
+        if (msgDiv) messagesArea.appendChild(msgDiv);
     });
+    
+    if (typeof hljs !== 'undefined') {
+        messagesArea.querySelectorAll('pre code').forEach(block => {
+            hljs.highlightElement(block);
+        });
+    } 
     messagesArea.scrollTop = messagesArea.scrollHeight;
     renderHistoryList();
 }
@@ -164,19 +183,46 @@ async function loadChat(chatId) {
 async function deleteChat(chatId, event) {
     event.stopPropagation();
     if (!confirm('Delete this conversation?')) return;
+    
     try {
+        // 1. Hapus file dari upload server (jika ada) – tidak mempengaruhi jika gagal
+        const chat = state.chats[chatId];
+        if (chat && chat.file_id) {
+            try {
+                const response = await fetch(`http://${window.location.hostname}:8001/files/${chat.file_id}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) {
+                    console.warn('File delete response not OK:', response.status);
+                }
+            } catch (fileError) {
+                console.warn('Failed to delete file (ignored):', fileError);
+                // Lanjutkan ke langkah berikutnya
+            }
+        }
+
+        // 2. Hapus history dari backend
         await fetch(`${HISTORY_ENDPOINT}/delete`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: chatId })
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: chatId })
         });
+
+        // 3. Hapus dari state dan perbarui UI
         delete state.chats[chatId];
         if (state.currentChatId === chatId) {
-            state.currentChatId = null; state.messages = [];
+            state.currentChatId = null;
+            state.messages = [];
             document.getElementById('welcomeScreen').classList.remove('hidden');
             document.getElementById('messagesArea').classList.add('hidden');
             document.getElementById('messagesArea').innerHTML = '';
         }
         renderHistoryList();
-    } catch (e) { console.error('Failed to delete chat:', e); }
+
+    } catch (e) {
+        console.error('Failed to delete chat:', e);
+        alert('Failed to delete conversation: ' + e.message);
+    }
 }
 
 
