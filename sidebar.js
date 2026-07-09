@@ -148,10 +148,32 @@ async function loadChat(chatId) {
     state.currentChatId = chatId;
     state.messages = chat.messages || [];
 
-    document.getElementById('welcomeScreen').classList.add('hidden');
+    // Reset field yang memang tidak pernah tersimpan di history (tidak ada skenario restore)
+    state.uploadedFile = null;
+    state.uploadedFileOriginalName = null;
+    const fileInputEl = document.getElementById('fileInput');
+    if (fileInputEl) fileInputEl.value = '';
+
+    // Pulihkan atau kosongkan file context sesuai data chat yang dibuka
+    const fileNameEl = document.getElementById('fileName');
+    const fileInfoEl = document.getElementById('fileInfo');
+    if (chat.file_id) {
+        state.uploadedFileId = chat.file_id;
+        if (fileNameEl) fileNameEl.textContent = chat.file_name || 'Attached file';
+        if (fileInfoEl) fileInfoEl.classList.add('show');
+    } else {
+        state.uploadedFileId = null;
+        if (fileInfoEl) fileInfoEl.classList.remove('show');
+    }
+
+    const welcomeScreenEl = document.getElementById('welcomeScreen');
+    if (welcomeScreenEl) welcomeScreenEl.classList.add('hidden');
+
     const messagesArea = document.getElementById('messagesArea');
+    if (!messagesArea) return;
     messagesArea.classList.remove('hidden');
     messagesArea.innerHTML = '';
+
     state.messages.forEach(msg => {
         const templateId = msg.role === 'user' ? 'userMessageTemplate' : 'aiMessageTemplate';
         const msgDiv = createMessageFromTemplate(templateId, {
@@ -168,12 +190,12 @@ async function loadChat(chatId) {
         });
         if (msgDiv) messagesArea.appendChild(msgDiv);
     });
-    
+
     if (typeof hljs !== 'undefined') {
         messagesArea.querySelectorAll('pre code').forEach(block => {
             hljs.highlightElement(block);
         });
-    } 
+    }
     messagesArea.scrollTop = messagesArea.scrollHeight;
     renderHistoryList();
 }
