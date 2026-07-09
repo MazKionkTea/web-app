@@ -1,3 +1,8 @@
+// Konfigurasi backend
+const UPLOAD_SERVER = `http://${window.location.hostname}:8001`;
+const UPLOAD_ENDPOINT = `${UPLOAD_SERVER}/upload`;
+
+
 // Fungsi generic untuk toggle class 'active' pada elemen switch
 function toggleSwitch(element) { element.classList.toggle('active'); }
 
@@ -35,11 +40,145 @@ function selectModel(modelName, element) {
 
 
 // [Elemen UI: input area] Menangani file yang diunggah user
-function handleFileUpload(input) {
-    if (input.files && input.files[0]) {
-        state.uploadedFile = input.files[0];
-        document.getElementById('fileName').textContent = state.uploadedFile.name;
-        document.getElementById('fileInfo').classList.add('show');
+// async function handleFileUpload(input) {
+//     if (!input.files || !input.files[0]) return;
+
+//     const file = input.files[0];
+
+//     // Validasi ekstensi di frontend (opsional, backend juga validasi)
+//     const allowedExtensions = ['.md', '.txt', '.py'];
+//     const fileName = file.name.toLowerCase();
+//     const extension = '.' + fileName.split('.').pop();
+//     if (!allowedExtensions.includes(extension)) {
+//         showStatus('Only .md, .txt, .py files are allowed', 'error');
+//         input.value = '';
+//         return;
+//     }
+
+//     // Update UI dulu (feedback instan)
+//     state.uploadedFile = file;
+//     document.getElementById('fileName').textContent = file.name;
+//     document.getElementById('fileInfo').classList.add('show');
+
+//     // Kirim ke backend
+//     showStatus('Uploading file...', 'connecting');
+
+//     try {
+//         const formData = new FormData();
+//         formData.append('file', file);
+
+//         const response = await fetch(`${UPLOAD_SERVER}/upload-process-embed`, {
+//             method: 'POST',
+//             body: formData
+//         });
+
+//         if (!response.ok) {
+//             const errorData = await response.json();
+//             throw new Error(errorData.detail || 'Upload failed');
+//         }
+
+//         const data = await response.json();
+
+//         state.uploadedFileId = data.upload.file_id;
+//         state.uploadedFileOriginalName = data.upload.original_filename; // simpan nama asli
+
+//         hideStatus();
+//         console.log('File uploaded:', data.original_filename, '→', data.upload.file_id);
+
+//         // Lanjut chunking + embedding
+//         showStatus('Processing file...', 'connecting');
+
+//         if (!embedResponse.ok) {
+//             const embedError = await embedResponse.json();
+//             throw new Error(embedError.detail || 'Processing failed');
+//         }
+
+//         const embedData = await embedResponse.json();
+//         hideStatus();
+//         console.log('File embedded:', embedData.chunks_processed, 'chunks → ChromaDB');
+
+//     } catch (error) {
+//         // Upload gagal - reset state
+//         state.uploadedFile = null;
+//         state.uploadedFileId = null;
+//         document.getElementById('fileInput').value = '';
+//         document.getElementById('fileInfo').classList.remove('show');
+//         showStatus(error.message, 'error');
+//     }
+// }
+
+
+async function handleFileUpload(input) {
+    if (!input.files || !input.files[0]) return;
+
+    const file = input.files[0];
+
+    // Validasi ekstensi
+    const allowedExtensions = ['.md', '.txt', '.py'];
+    const extension = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(extension)) {
+        showStatus('Only .md, .txt, .py files are allowed', 'error');
+        input.value = '';
+        return;
+    }
+
+    // Update UI
+    state.uploadedFile = file;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileInfo').classList.add('show');
+
+    showStatus('Uploading and processing file...', 'connecting');
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${UPLOAD_SERVER}/upload-process-embed`, {
+            method: 'POST',
+            body: formData
+        });
+
+        // Baca sebagai text terlebih dahulu
+        const responseText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('❌ Server response is not valid JSON:', responseText);
+            throw new Error('Server returned invalid response format.');
+        }
+
+        if (!response.ok) {
+            throw new Error(data.detail || `Upload failed (HTTP ${response.status})`);
+        }
+
+        // Validasi struktur data
+        if (!data.upload || !data.storage || typeof data.storage.stored_count !== 'number') {
+            console.error('❌ Unexpected response structure:', data);
+            throw new Error('Incomplete response from server.');
+        }
+
+        // Simpan file_id dan nama asli
+        state.uploadedFileId = data.upload.file_id;
+        state.uploadedFileOriginalName = data.upload.original_filename;
+
+        hideStatus();
+        console.log(`✅ File uploaded: ${data.upload.original_filename} (ID: ${data.upload.file_id})`);
+        console.log(`📦 Chunks stored: ${data.storage.stored_count}`);
+
+        showStatus(`✅ Processed: ${data.storage.stored_count} chunks stored`, 'success');
+        setTimeout(hideStatus, 3000);
+
+    } catch (error) {
+        console.error('❌ Upload error:', error);
+        // Reset semua state terkait file
+        state.uploadedFile = null;
+        state.uploadedFileId = null;
+        state.uploadedFileOriginalName = null;
+        document.getElementById('fileInput').value = '';
+        document.getElementById('fileInfo').classList.remove('show');
+        showStatus(`❌ ${error.message || 'Unknown error'}`, 'error');
+        setTimeout(hideStatus, 5000);
     }
 }
 
@@ -47,6 +186,8 @@ function handleFileUpload(input) {
 // Membersihkan file yang sudah diunggah
 function clearFile() {
     state.uploadedFile = null;
+    state.uploadedFileId = null;
+    state.uploadedFileOriginalName = null;
     document.getElementById('fileInput').value = '';
     document.getElementById('fileInfo').classList.remove('show');
 }
