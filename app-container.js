@@ -71,6 +71,17 @@ function renderMarkdown(text) {
     try { return sanitizeHtml(marked.parse(text)); } catch (e) { return escapeHtml(text).replace(/\n/g, '<br>'); }
 }
 
+function updateHighlightTheme() {
+    const themeLink = document.getElementById('hljs-theme');
+    if (!themeLink) return; // aman jika elemen tidak ada
+
+    if (state.isDarkMode) {
+        themeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css';
+    } else {
+        themeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css';
+    }
+}
+
 // [Elemen UI: welcome screen] Mengirim teks saran (quick prompt)
 function sendSuggestion(text) {
     document.getElementById('chatInput').value = text;
@@ -96,7 +107,6 @@ const LLAMA_SERVER = `http://${window.location.hostname}:8080`;
 const CHAT_ENDPOINT = `${LLAMA_SERVER}/v1/chat/completions`;
 const HISTORY_BACKEND = `http://${window.location.hostname}:8000`;
 const HISTORY_ENDPOINT = `${HISTORY_BACKEND}/history`;
-
 
 
 // Inisialisasi aplikasi saat DOM selesai dimuat
