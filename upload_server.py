@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from typing import List, Dict
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import llama_cpp
 from llama_cpp import Llama
 import chromadb
 
@@ -28,8 +29,15 @@ async def lifespan(app: FastAPI):
     yield
 
 
-
 app = FastAPI(title="Upload Server", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"], # Atau gunakan ["*"] untuk development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 UPLOAD_DIR = Path("./uploads")
@@ -334,22 +342,32 @@ def chunk_text_paragraph(file_path: Path) -> List[dict]:
 def chunk_by_size(text: str, file_path: Path, file_type: str, chunk_type: str) -> List[dict]:
     """
     Fallback: chunk berdasarkan ukuran karakter dengan overlap.
+    Dijamin tidak akan infinite loop.
     """
     chunks = []
     chunk_idx = 0
     start = 0
-    
-    while start < len(text):
-        chunk_idx += 1
-        end = min(start + MAX_CHUNK_CHARS, len(text))
-        
-        if end < len(text):
+    text_len = len(text)
+
+    while start < text_len:
+        end = min(start + MAX_CHUNK_CHARS, text_len)
+
+        # Cari batas kata jika belum mencapai akhir file
+        if end < text_len:
+            original_end = end
+
             while end > start and text[end - 1] not in (' ', '\n', '\t', '.', '!', '?'):
                 end -= 1
-        
+
+            # Jika tidak menemukan pemisah sama sekali,
+            # gunakan posisi awal agar loop tetap maju.
+            if end == start:
+                end = original_end
+
         chunk_text = text[start:end].strip()
-        
+
         if chunk_text and len(chunk_text) >= MIN_CHUNK_CHARS:
+            chunk_idx += 1
             chunks.append(create_chunk(
                 chunk_index=chunk_idx,
                 text=chunk_text,
@@ -360,11 +378,16 @@ def chunk_by_size(text: str, file_path: Path, file_type: str, chunk_type: str) -
                 line_start=0,
                 line_end=0
             ))
-        
-        start = end - CHUNK_OVERLAP
-        if start >= len(text):
-            break
-    
+
+        # Hitung posisi berikutnya
+        next_start = end - CHUNK_OVERLAP
+
+        # Pastikan selalu maju
+        if next_start <= start:
+            next_start = end
+
+        start = next_start
+
     return chunks
 
 
@@ -387,8 +410,18 @@ def split_text_with_overlap(text: str, max_chars: int, overlap: int) -> List[str
         end = min(start + max_chars, len(text))
         
         if end < len(text):
-            while end > start and text[end - 1] not in (' ', '\n', '\t', '.', '!', '?'):
-                end -= 1
+            # Cari pemisah yang aman (hindari loop tak terbatas)
+            separators = (' ', '\n', '\t', '.', '!', '?')
+            found = -1
+            for sep in separators:
+                pos = text.rfind(sep, start, end)
+                if pos > found:
+                    found = pos
+            if found >= start:
+                end = found + 1
+            else:
+                # Jika tidak ada pemisah, potong paksa di batas
+                end = min(start + max_chars, len(text))
         
         parts.append(text[start:end].strip())
         start = end - overlap
